@@ -1,0 +1,31 @@
+name: Bug report
+description: Reporte um problema reproduzível no Analogion.
+title: "[Bug] "
+labels: []
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema
+      description: O que aconteceu e o que você esperava que acontecesse?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Como reproduzir
+      description: Liste passos curtos e objetivos.
+      placeholder: "1. Abra…\n2. Clique…\n3. Observe…"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Ambiente
+      description: Navegador, sistema e dispositivo, quando relevante.
+      placeholder: "Chrome 152 · Windows 10 · desktop"
+  - type: textarea
+    id: notes
+    attributes:
+      label: Contexto adicional
+      description: Screenshots, mensagens de erro ou outras informações úteis.
