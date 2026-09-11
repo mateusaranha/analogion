@@ -226,7 +226,7 @@ export default function Home() {
       playerRef.current = null;
       setPlayerReady(false);
     };
-  }, [current?.id, current?.videoId, handleEnded, isListening]);
+  }, [current?.id, current?.videoId, handleEnded]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -250,26 +250,16 @@ export default function Home() {
 
   function togglePlayback() {
     if (!current || !playerRef.current) return;
-    if (!isListening) {
-      resumeRef.current = { time: playerRef.current.getCurrentTime?.() || 0, playing: true };
-      setIsListening(true);
-      return;
-    }
     if (isPlaying) playerRef.current.pauseVideo(); else playerRef.current.playVideo();
   }
 
   function switchListening(next: boolean) {
-    resumeRef.current = {
-      time: playerRef.current?.getCurrentTime?.() || 0,
-      playing: isPlaying,
-    };
     setIsListening(next);
   }
 
   function selectRecording(index: number, shouldPlay = false) {
     resumeRef.current = { time: 0, playing: shouldPlay };
     resetPlaybackCounters(); setCurrentIndex(index); setPlayerError("");
-    if (shouldPlay) setIsListening(true);
   }
 
   function moveRecording(index: number, direction: -1 | 1) {
@@ -478,51 +468,16 @@ export default function Home() {
   const targetLabel = repeatTarget === "current" ? "gravação" : "fila";
   const progressPercent = progress.duration ? (progress.current / progress.duration) * 100 : 0;
 
-  if (isListening && current) {
-    return (
-      <main className="listening-shell">
-        <div className="listening-ambient" aria-hidden="true" />
-        <header className="listening-header">
-          <div className="wordmark small">ANALOGION</div>
-          <button className="quiet-button" onClick={() => switchListening(false)}>
-            <BookOpen aria-hidden="true" /> Biblioteca
-          </button>
-        </header>
-        <section className="listening-stage" aria-label="Modo escuta">
-          <div className="video-frame listening-video">
-            <div className="player-mount" ref={playerHostRef} />
-            {playerError && <div className="player-message">{playerError}</div>}
-          </div>
-          <div className="listening-meta">
-            <p>{activeCollectionName ?? "Fila atual"}</p>
-            <h1>{current.title}</h1>
-          </div>
-          <div className="seek-row">
-            <span>{formatTime(progress.current)}</span>
-            <input aria-label="Progresso da gravação" type="range" min="0"
-              max={progress.duration || 0} value={Math.min(progress.current, progress.duration || 0)}
-              onChange={(event) => playerRef.current?.seekTo(Number(event.target.value), true)}
-              style={{ "--seek": `${progressPercent}%` } as React.CSSProperties} />
-            <span>{formatTime(progress.duration)}</span>
-          </div>
-          <div className="listening-controls">
-            <button className="icon-button" aria-label="Gravação anterior" disabled={currentIndex === 0}
-              onClick={() => selectRecording(currentIndex - 1, true)}><ChevronLeft /></button>
-            <button className="play-or-pause" aria-label={isPlaying ? "Pausar" : "Reproduzir"} onClick={togglePlayback}>
-              {isPlaying ? <Pause /> : <Play />}
-            </button>
-            <button className="icon-button" aria-label="Próxima gravação"
-              disabled={currentIndex >= queue.length - 1}
-              onClick={() => selectRecording(currentIndex + 1, true)}><ChevronRight /></button>
-          </div>
-          <div className="repeat-status"><Repeat aria-hidden="true" /> {targetLabel} · {repeatLabel}</div>
-        </section>
-      </main>
-    );
-  }
-
   return (
-    <main className="preparation-shell">
+    <main className={`preparation-shell${isListening ? " listening-shell" : ""}`}>
+      <div className="listening-ambient" aria-hidden="true" />
+      <header className="listening-header">
+        <div className="wordmark small">ANALOGION</div>
+        <button className="quiet-button" onClick={() => switchListening(false)}>
+          <BookOpen aria-hidden="true" /> Biblioteca
+        </button>
+      </header>
+
       <header className="topbar">
         <div><div className="wordmark">ANALOGION</div><p className="wordmark-note">mesa de escuta</p></div>
         <div className="backup-actions">
@@ -556,7 +511,7 @@ export default function Home() {
             <div><p className="eyebrow">{activeCollectionName ?? "Fila atual"}</p><h2>{current?.title ?? "Escolha o que deseja ouvir"}</h2></div>
             {current && <button className="listen-mode-button" onClick={() => switchListening(true)}><Headphones aria-hidden="true" /> Modo escuta</button>}
           </div>
-          <div className={`video-frame ${!current ? "empty" : ""}`}>
+          <div className={`video-frame ${isListening ? "listening-video" : ""} ${!current ? "empty" : ""}`}>
             {current ? <>
               <div className="player-mount" ref={playerHostRef} />
               {playerError && <div className="player-message">{playerError}</div>}
@@ -566,6 +521,7 @@ export default function Home() {
               <button className="primary-action" onClick={() => setAddOpen(true)}><Plus aria-hidden="true" /> Adicionar gravação</button>
             </div>}
           </div>
+
           {current && <div className="compact-player-controls">
             <button className="icon-button" aria-label="Gravação anterior" disabled={currentIndex === 0}
               onClick={() => selectRecording(currentIndex - 1, true)}><ChevronLeft /></button>
@@ -575,6 +531,31 @@ export default function Home() {
             <button className="icon-button" aria-label="Próxima gravação" disabled={currentIndex >= queue.length - 1}
               onClick={() => selectRecording(currentIndex + 1, true)}><ChevronRight /></button>
             <div className="compact-progress"><div><span style={{ width: `${progressPercent}%` }} /></div><small>{formatTime(progress.current)} / {formatTime(progress.duration)}</small></div>
+          </div>}
+
+          {current && <div className="listening-panel">
+            <div className="listening-meta">
+              <p>{activeCollectionName ?? "Fila atual"}</p>
+              <h1>{current.title}</h1>
+            </div>
+            <div className="seek-row">
+              <span>{formatTime(progress.current)}</span>
+              <input aria-label="Progresso da gravação" type="range" min="0"
+                max={progress.duration || 0} value={Math.min(progress.current, progress.duration || 0)}
+                onChange={(event) => playerRef.current?.seekTo(Number(event.target.value), true)}
+                style={{ "--seek": `${progressPercent}%` } as React.CSSProperties} />
+              <span>{formatTime(progress.duration)}</span>
+            </div>
+            <div className="listening-controls">
+              <button className="icon-button" aria-label="Gravação anterior" disabled={currentIndex === 0}
+                onClick={() => selectRecording(currentIndex - 1, true)}><ChevronLeft /></button>
+              <button className="play-or-pause" aria-label={isPlaying ? "Pausar" : "Reproduzir"} onClick={togglePlayback}>
+                {isPlaying ? <Pause /> : <Play />}
+              </button>
+              <button className="icon-button" aria-label="Próxima gravação" disabled={currentIndex >= queue.length - 1}
+                onClick={() => selectRecording(currentIndex + 1, true)}><ChevronRight /></button>
+            </div>
+            <div className="repeat-status"><Repeat aria-hidden="true" /> {targetLabel} · {repeatLabel}</div>
           </div>}
 
           <div className="queue-section">

@@ -3,5 +3,6 @@ import Home from "./app/page";
 import "./app/globals.css";
 import "./app/repository-library.css";
 import "./app/select-controls.css";
+import "./app/listening-mode.css";
 
 createRoot(document.getElementById("root")!).render(<Home />);
