@@ -1,6 +1,9 @@
 /* Keep Radix select menus from changing the document width when they lock page scrolling. */
 html { scrollbar-gutter: stable; }
-body[data-scroll-locked] { margin-right: 0 !important; }
+body[data-scroll-locked] {
+  margin-right: 0 !important;
+  padding-right: 0 !important;
+}
 
 /* “Indefinidamente” needs the same room as the repeat-target control. */
 .analogion-select.short { width: 170px; }
