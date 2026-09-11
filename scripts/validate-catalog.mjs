@@ -1,7 +1,8 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const catalogDir = new URL("../catalog/sets/", import.meta.url);
+const catalogDir = fileURLToPath(new URL("../catalog/sets/", import.meta.url));
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const videoIdPattern = /^[A-Za-z0-9_-]{11}$/;
 const repeatModes = new Set(["one", "three", "infinite"]);
@@ -19,7 +20,7 @@ const ids = new Set();
 const errors = [];
 
 for (const filename of files) {
-  const path = join(catalogDir.pathname, filename);
+  const path = join(catalogDir, filename);
   let value;
   try {
     value = JSON.parse(readFileSync(path, "utf8"));
