@@ -257,6 +257,13 @@ export default function Home() {
     setIsListening(next);
   }
 
+  function seekTo(seconds: number) {
+    if (!progress.duration || !playerRef.current) return;
+    const nextTime = Math.min(Math.max(seconds, 0), progress.duration);
+    playerRef.current.seekTo(nextTime, true);
+    setProgress((value) => ({ ...value, current: nextTime }));
+  }
+
   function selectRecording(index: number, shouldPlay = false) {
     resumeRef.current = { time: 0, playing: shouldPlay };
     resetPlaybackCounters(); setCurrentIndex(index); setPlayerError("");
@@ -530,7 +537,18 @@ export default function Home() {
             </button>
             <button className="icon-button" aria-label="Próxima gravação" disabled={currentIndex >= queue.length - 1}
               onClick={() => selectRecording(currentIndex + 1, true)}><ChevronRight /></button>
-            <div className="compact-progress"><div><span style={{ width: `${progressPercent}%` }} /></div><small>{formatTime(progress.current)} / {formatTime(progress.duration)}</small></div>
+            <div className="compact-progress">
+              <input
+                className="compact-seek"
+                aria-label="Posição da gravação"
+                type="range" min="0" max={progress.duration || 1}
+                value={Math.min(progress.current, progress.duration || 0)}
+                disabled={!progress.duration}
+                onChange={(event) => seekTo(Number(event.target.value))}
+                style={{ "--seek": `${progressPercent}%` } as React.CSSProperties}
+              />
+              <small>{formatTime(progress.current)} / {formatTime(progress.duration)}</small>
+            </div>
           </div>}
 
           {current && <div className="listening-panel">
@@ -542,7 +560,7 @@ export default function Home() {
               <span>{formatTime(progress.current)}</span>
               <input aria-label="Progresso da gravação" type="range" min="0"
                 max={progress.duration || 0} value={Math.min(progress.current, progress.duration || 0)}
-                onChange={(event) => playerRef.current?.seekTo(Number(event.target.value), true)}
+                onChange={(event) => seekTo(Number(event.target.value))}
                 style={{ "--seek": `${progressPercent}%` } as React.CSSProperties} />
               <span>{formatTime(progress.duration)}</span>
             </div>
