@@ -254,12 +254,6 @@ body.recollection-active {
   pointer-events: none;
 }
 
-.preparation-shell.recollection-shell.recollection-controls-hidden:focus-within .listening-panel,
-.preparation-shell.recollection-shell.recollection-controls-hidden:focus-within .recollection-chrome {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 .recollection-wake-layer {
   position: fixed;
   inset: 0;

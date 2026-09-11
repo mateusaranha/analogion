@@ -27,10 +27,14 @@ export function RecollectionMode() {
     setControlsVisible(true)
     clearHideTimer()
     hideTimerRef.current = window.setTimeout(() => {
+      const focusedElement = document.activeElement
+      if (focusedElement instanceof HTMLElement && shell?.contains(focusedElement)) {
+        focusedElement.blur()
+      }
       setControlsVisible(false)
       hideTimerRef.current = null
     }, IDLE_HIDE_MS)
-  }, [clearHideTimer])
+  }, [clearHideTimer, shell])
 
   const exitRecollection = useCallback(async () => {
     activeRef.current = false
@@ -170,7 +174,11 @@ export function RecollectionMode() {
 
       {shell && active && createPortal(
         <>
-          <div className="recollection-chrome" aria-label="Modo Recolhimento">
+          <div
+            className="recollection-chrome"
+            aria-label="Modo Recolhimento"
+            aria-hidden={!controlsVisible}
+          >
             <div className="recollection-mark">
               <span>ANALOGION</span>
               <small>Recolhimento</small>
