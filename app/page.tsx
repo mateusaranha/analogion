@@ -2,13 +2,14 @@
 
 import {
   ArrowDown, ArrowUp, BookOpen, ChevronLeft, ChevronRight, Download, Headphones,
-  Pause, Play, Plus, Repeat, Save, Upload, X,
+  Pause, Pencil, Play, Plus, Repeat, Save, Upload, X,
 } from "lucide-react";
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { EditRecordingDialog } from "@/components/edit-recording-dialog";
 import { LibraryPanel, type LibraryView } from "@/components/library-panel";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -94,6 +95,7 @@ export default function Home() {
   const [addOpen, setAddOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [editSet, setEditSet] = useState<SavedSet | null>(null);
+  const [editRecording, setEditRecording] = useState<Recording | null>(null);
   const [deleteSet, setDeleteSet] = useState<SavedSet | null>(null);
   const [publishSet, setPublishSet] = useState<SavedSet | null>(null);
   const [publishSlug, setPublishSlug] = useState("");
@@ -223,7 +225,7 @@ export default function Home() {
       playerRef.current = null;
       setPlayerReady(false);
     };
-  }, [current?.id, handleEnded, isListening]);
+  }, [current?.id, current?.videoId, handleEnded, isListening]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -289,6 +291,30 @@ export default function Home() {
     } else if (index < currentIndex || currentIndex >= next.length) {
       setCurrentIndex(Math.max(0, currentIndex - 1));
     }
+  }
+
+  function updateQueueRecording(nextRecording: Recording) {
+    const index = queue.findIndex((item) => item.id === nextRecording.id);
+    if (index < 0) {
+      setEditRecording(null);
+      return;
+    }
+
+    const previous = queue[index];
+    const videoChanged = previous.videoId !== nextRecording.videoId;
+    if (index === currentIndex && videoChanged) {
+      resumeRef.current = { time: 0, playing: isPlaying };
+      setProgress({ current: 0, duration: 0 });
+      setPlayerError("");
+      resetPlaybackCounters();
+    }
+
+    setQueue((items) => items.map((item) => item.id === nextRecording.id ? nextRecording : item));
+    if (activeCollection?.kind === "curated") setActiveCollection(null);
+    setEditRecording(null);
+    setNotice(activeCollection?.kind === "local"
+      ? "Gravação atualizada na fila. Use “Atualizar conjunto” para salvar a alteração no conjunto."
+      : "Gravação atualizada na fila.");
   }
 
   async function addRecording(event: FormEvent) {
@@ -550,6 +576,7 @@ export default function Home() {
                   <span><strong>{item.title}</strong><small>{index === currentIndex ? "No analogion" : "YouTube"}</small></span>
                 </button>
                 <div className="queue-actions">
+                  <button aria-label="Editar gravação" onClick={() => setEditRecording(item)}><Pencil /></button>
                   <button aria-label="Mover para cima" disabled={index === 0} onClick={() => moveRecording(index, -1)}><ArrowUp /></button>
                   <button aria-label="Mover para baixo" disabled={index === queue.length - 1} onClick={() => moveRecording(index, 1)}><ArrowDown /></button>
                   <button aria-label="Remover da fila" onClick={() => removeRecording(index)}><X /></button>
@@ -574,6 +601,13 @@ export default function Home() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <EditRecordingDialog
+        recording={editRecording}
+        open={!!editRecording}
+        onOpenChange={(open) => { if (!open) setEditRecording(null) }}
+        onSave={updateQueueRecording}
+      />
 
       <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
         <DialogContent className="analogion-dialog">
