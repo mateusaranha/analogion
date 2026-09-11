@@ -174,6 +174,16 @@ export function RecollectionMode() {
 
       {shell && active && createPortal(
         <>
+          <div className="recollection-idle-atmosphere" aria-hidden="true" />
+          <div className="recollection-idle-ornament" aria-hidden="true">
+            <span className="recollection-idle-line" />
+            <span className="recollection-idle-dots">
+              <span />
+              <span />
+              <span />
+            </span>
+            <span className="recollection-idle-line" />
+          </div>
           <div
             className="recollection-chrome"
             aria-label="Modo Recolhimento"

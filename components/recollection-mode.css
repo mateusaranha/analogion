@@ -181,6 +181,63 @@ body.recollection-active {
   color: #696156;
 }
 
+.recollection-idle-atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(ellipse 24% 7% at 50% 76%, rgba(145, 89, 37, .08) 0%, rgba(112, 68, 30, .035) 42%, transparent 76%),
+    radial-gradient(ellipse 46% 16% at 50% 78%, rgba(76, 47, 25, .028) 0%, transparent 72%);
+  transition: opacity .8s ease;
+}
+
+.recollection-idle-ornament {
+  position: fixed;
+  left: 50%;
+  top: 76svh;
+  z-index: 10;
+  width: clamp(136px, 15vw, 210px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 5px);
+  transition: opacity .72s ease, transform .72s ease;
+}
+
+.recollection-idle-line {
+  flex: 1 1 auto;
+  height: 1px;
+  opacity: .55;
+}
+
+.recollection-idle-line:first-child {
+  background: linear-gradient(90deg, transparent 0%, rgba(151, 104, 58, .42) 100%);
+}
+
+.recollection-idle-line:last-child {
+  background: linear-gradient(90deg, rgba(151, 104, 58, .42) 0%, transparent 100%);
+}
+
+.recollection-idle-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.recollection-idle-dots > span {
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(171, 117, 63, .78);
+  box-shadow: 0 0 7px rgba(151, 91, 40, .12);
+}
+
 .recollection-chrome {
   position: fixed;
   inset: 0 0 auto;
@@ -263,6 +320,15 @@ body.recollection-active {
   pointer-events: none;
 }
 
+.preparation-shell.recollection-shell.recollection-controls-hidden .recollection-idle-atmosphere {
+  opacity: 1;
+}
+
+.preparation-shell.recollection-shell.recollection-controls-hidden .recollection-idle-ornament {
+  opacity: .72;
+  transform: translate(-50%, 0);
+}
+
 .recollection-wake-layer {
   position: fixed;
   inset: 0;
@@ -319,6 +385,18 @@ body.recollection-active {
     width: calc(100% - 40px);
   }
 
+  .recollection-idle-atmosphere {
+    background:
+      radial-gradient(ellipse 42% 6% at 50% 80%, rgba(145, 89, 37, .07) 0%, rgba(112, 68, 30, .03) 44%, transparent 78%),
+      radial-gradient(ellipse 70% 15% at 50% 81%, rgba(76, 47, 25, .024) 0%, transparent 72%);
+  }
+
+  .recollection-idle-ornament {
+    top: 80svh;
+    width: clamp(122px, 38vw, 168px);
+    gap: 10px;
+  }
+
   .recollection-chrome {
     height: 64px;
     padding: 16px 18px;
@@ -342,6 +420,8 @@ body.recollection-active {
   .recollection-entry,
   .recollection-exit,
   .recollection-chrome,
+  .recollection-idle-atmosphere,
+  .recollection-idle-ornament,
   .preparation-shell.recollection-shell .video-frame,
   .preparation-shell.recollection-shell .listening-panel {
     transition: none;
