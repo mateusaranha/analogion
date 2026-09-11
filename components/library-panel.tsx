@@ -23,7 +23,13 @@ type LibraryPanelProps = {
   onSaveCuratedLocally: (set: CuratedSet) => void;
 };
 
-function repeatMeta(set: Pick<SavedSet, "recordings" | "repeatMode" | "repeatTarget">) {
+type RepeatSummary = {
+  recordings: readonly unknown[];
+  repeatMode: SavedSet["repeatMode"];
+  repeatTarget: SavedSet["repeatTarget"];
+};
+
+function repeatMeta(set: RepeatSummary) {
   const recordings = `${set.recordings.length} ${set.recordings.length === 1 ? "gravação" : "gravações"}`;
   const target = set.repeatTarget === "current" ? "gravação" : "fila";
   const cycles = set.repeatMode === "infinite" ? "∞" : set.repeatMode === "three" ? "3×" : "1×";
