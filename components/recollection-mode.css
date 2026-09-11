@@ -189,12 +189,83 @@ body.recollection-active {
   position: fixed;
   inset: 0;
   z-index: 0;
+  overflow: hidden;
   pointer-events: none;
   opacity: 0;
   background:
     radial-gradient(ellipse 26% 9% at 50% 76%, rgba(145, 89, 37, .15) 0%, rgba(112, 68, 30, .07) 42%, transparent 76%),
     radial-gradient(ellipse 50% 18% at 50% 78%, rgba(76, 47, 25, .052) 0%, transparent 72%);
   transition: opacity .52s cubic-bezier(.22, .61, .36, 1);
+}
+
+.recollection-idle-atmosphere::before,
+.recollection-idle-atmosphere::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  transform-origin: 50% 72%;
+  will-change: transform, opacity;
+  animation-play-state: paused;
+}
+
+.recollection-idle-atmosphere::before {
+  inset: 57% 11% -7%;
+  background: radial-gradient(ellipse at 50% 52%, rgba(165, 99, 37, .06) 0%, rgba(124, 73, 31, .026) 40%, transparent 72%);
+  animation: recollection-ember-drift-primary 11.8s cubic-bezier(.45, .05, .55, .95) -2.6s infinite;
+  animation-play-state: paused;
+}
+
+.recollection-idle-atmosphere::after {
+  inset: 61% 19% -5%;
+  background: radial-gradient(ellipse at 50% 48%, rgba(188, 119, 49, .042) 0%, rgba(128, 75, 31, .018) 42%, transparent 69%);
+  animation: recollection-ember-drift-secondary 17.4s cubic-bezier(.45, .05, .55, .95) -7.3s infinite;
+  animation-play-state: paused;
+}
+
+@keyframes recollection-ember-drift-primary {
+  0%, 100% {
+    opacity: .46;
+    transform: translate3d(-6px, 2px, 0) scale(1, 1.012);
+  }
+  17% {
+    opacity: .57;
+    transform: translate3d(3px, -3px, 0) scale(1.018, .994);
+  }
+  41% {
+    opacity: .49;
+    transform: translate3d(8px, 1px, 0) scale(.994, 1.026);
+  }
+  68% {
+    opacity: .61;
+    transform: translate3d(-2px, -2px, 0) scale(1.024, 1.006);
+  }
+  86% {
+    opacity: .52;
+    transform: translate3d(-7px, 1px, 0) scale(1.006, .997);
+  }
+}
+
+@keyframes recollection-ember-drift-secondary {
+  0%, 100% {
+    opacity: .34;
+    transform: translate3d(4px, 1px, 0) scale(1.014, .995);
+  }
+  23% {
+    opacity: .45;
+    transform: translate3d(-4px, -2px, 0) scale(.992, 1.024);
+  }
+  52% {
+    opacity: .38;
+    transform: translate3d(7px, 0, 0) scale(1.025, 1.004);
+  }
+  74% {
+    opacity: .48;
+    transform: translate3d(0, -3px, 0) scale(1.002, 1.03);
+  }
+  91% {
+    opacity: .40;
+    transform: translate3d(-5px, 1px, 0) scale(1.012, .996);
+  }
 }
 
 .recollection-idle-ornament {
@@ -347,6 +418,11 @@ body.recollection-active {
   transition: opacity .84s ease;
 }
 
+.preparation-shell.recollection-shell.recollection-controls-hidden .recollection-idle-atmosphere::before,
+.preparation-shell.recollection-shell.recollection-controls-hidden .recollection-idle-atmosphere::after {
+  animation-play-state: running;
+}
+
 .preparation-shell.recollection-shell.recollection-controls-hidden .recollection-idle-ornament {
   opacity: .84;
   transform: translate(-50%, 0);
@@ -415,6 +491,14 @@ body.recollection-active {
       radial-gradient(ellipse 76% 18% at 50% 81%, rgba(76, 47, 25, .044) 0%, transparent 72%);
   }
 
+  .recollection-idle-atmosphere::before {
+    inset: 61% 3% -6%;
+  }
+
+  .recollection-idle-atmosphere::after {
+    inset: 65% 10% -4%;
+  }
+
   .recollection-idle-ornament {
     top: 80svh;
     width: clamp(122px, 38vw, 168px);
@@ -449,5 +533,11 @@ body.recollection-active {
   .preparation-shell.recollection-shell .video-frame,
   .preparation-shell.recollection-shell .listening-panel {
     transition: none;
+  }
+
+  .recollection-idle-atmosphere::before,
+  .recollection-idle-atmosphere::after {
+    animation: none;
+    opacity: 0;
   }
 }
