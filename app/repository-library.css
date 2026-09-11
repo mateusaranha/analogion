@@ -1,0 +1,104 @@
+.library-switcher {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-top: 22px;
+  padding: 3px;
+  border: 1px solid #3d342a;
+  border-radius: 7px;
+  background: rgba(10, 9, 8, .38);
+}
+
+.library-switcher button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #81786b;
+  cursor: pointer;
+  font-size: .76rem;
+  transition: color .15s, background .15s;
+}
+
+.library-switcher button:hover { color: #c8b9a2; }
+.library-switcher button.active {
+  background: #282219;
+  color: #dfd2bd;
+  box-shadow: 0 0 0 1px rgba(190, 151, 85, .12) inset;
+}
+
+.library-switcher + .set-list { margin-top: 18px; }
+.set-row.curated { grid-template-columns: minmax(0, 1fr) 36px; }
+.set-description {
+  display: -webkit-box;
+  margin-top: 7px;
+  overflow: hidden;
+  color: #71695e;
+  font-size: .7rem;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.empty-library small {
+  display: block;
+  margin-top: 8px;
+  color: #625b52;
+  font-size: .68rem;
+  line-height: 1.5;
+}
+
+.set-menu { width: 194px; }
+
+.dialog-form textarea {
+  width: 100%;
+  min-height: 78px;
+  resize: vertical;
+  border: 1px solid #4c4033;
+  border-radius: 5px;
+  background: #0f0d0b;
+  color: #eee4d2;
+  padding: 10px 11px;
+  font: inherit;
+  line-height: 1.45;
+}
+.dialog-form textarea::placeholder { color: #665e53; }
+.dialog-form textarea:focus-visible {
+  outline: 2px solid #d1ad67;
+  outline-offset: 3px;
+}
+
+.publish-path {
+  display: grid;
+  gap: 6px;
+  padding: 11px 12px;
+  border: 1px solid #3e352b;
+  border-radius: 5px;
+  background: #12100d;
+}
+.publish-path span {
+  color: #756c60;
+  font-size: .66rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.publish-path code {
+  overflow-wrap: anywhere;
+  color: #c9b891;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: .75rem;
+}
+.publish-note {
+  margin: -2px 0 0;
+  color: #7f7669;
+  font-size: .73rem;
+  line-height: 1.55;
+}
+.publish-footer { row-gap: 8px; }
+
+@media (max-width: 600px) {
+  .set-row.curated { grid-template-columns: minmax(0, 1fr) 34px; }
+  .publish-footer { flex-direction: column-reverse; }
+  .publish-footer .primary-action,
+  .publish-footer .secondary-action { width: 100%; }
+}

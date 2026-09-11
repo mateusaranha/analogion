@@ -8,7 +8,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "validate:catalog": "node scripts/validate-catalog.mjs",
+    "build": "pnpm validate:catalog && tsc --noEmit && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
