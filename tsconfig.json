@@ -27,12 +27,12 @@
   "include": [
     "main.tsx",
     "vite.config.ts",
-    "app/page.tsx",
+    "app/**/*.ts",
+    "app/**/*.tsx",
     "lib/**/*.ts",
-    "components/ui/button.tsx",
-    "components/ui/dialog.tsx",
-    "components/ui/alert-dialog.tsx",
-    "components/ui/select.tsx"
+    "lib/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx"
   ],
   "exclude": [
     "node_modules",
