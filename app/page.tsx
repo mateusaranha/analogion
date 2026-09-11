@@ -2,13 +2,14 @@
 
 import {
   ArrowDown, ArrowUp, BookOpen, ChevronLeft, ChevronRight, Download, Headphones,
-  MoreHorizontal, Pause, Pencil, Play, Plus, Repeat, Save, Trash2, Upload, X,
+  Pause, Play, Plus, Repeat, Save, Upload, X,
 } from "lucide-react";
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { LibraryPanel, type LibraryView } from "@/components/library-panel";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -19,22 +20,19 @@ import {
   advanceAfterEnd, extractYouTubeId, formatTime, type PlaybackCounters,
   type RepeatMode, type RepeatTarget,
 } from "@/lib/analogion";
+import {
+  createCuratedDraft, curatedSets, slugifyCuratedId, type CuratedSet,
+} from "@/lib/curated-library";
+import { isStoredState, type Recording, type SavedSet, type StoredState } from "@/lib/library";
 
-type Recording = { id: string; videoId: string; url: string; title: string };
-type SavedSet = {
-  id: string; name: string; recordings: Recording[];
-  repeatMode: RepeatMode; repeatTarget: RepeatTarget; updatedAt: string;
-};
-type StoredState = {
-  version: 1; queue: Recording[]; sets: SavedSet[];
-  preferences: { repeatMode: RepeatMode; repeatTarget: RepeatTarget };
-};
 type YouTubePlayer = {
   playVideo: () => void; pauseVideo: () => void;
   seekTo: (seconds: number, allowSeekAhead: boolean) => void;
   getCurrentTime: () => number; getDuration: () => number;
   loadVideoById: (videoId: string) => void; destroy: () => void;
 };
+
+type ActiveCollection = { kind: "local" | "curated"; id: string } | null;
 
 declare global {
   interface Window {
@@ -50,6 +48,7 @@ declare global {
 }
 
 const STORAGE_KEY = "analogion-library-v1";
+const REPOSITORY_UPLOAD_URL = "https://github.com/mateusaranha/analogion/upload/main/catalog/sets";
 const DEFAULT_STATE: StoredState = {
   version: 1, queue: [], sets: [],
   preferences: { repeatMode: "infinite", repeatTarget: "queue" },
@@ -59,12 +58,23 @@ function makeId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function isStoredState(value: unknown): value is StoredState {
-  if (!value || typeof value !== "object") return false;
-  const state = value as Partial<StoredState>;
-  return state.version === 1 && Array.isArray(state.queue) && Array.isArray(state.sets) &&
-    !!state.preferences && ["one", "three", "infinite"].includes(state.preferences.repeatMode) &&
-    ["current", "queue"].includes(state.preferences.repeatTarget);
+function recordingsFromCurated(set: CuratedSet): Recording[] {
+  return set.recordings.map((recording, index) => ({
+    id: `curated-${set.id}-${index}-${recording.videoId}`,
+    videoId: recording.videoId,
+    url: `https://www.youtube.com/watch?v=${recording.videoId}`,
+    title: recording.title,
+  }));
+}
+
+function downloadJson(value: unknown, filename: string) {
+  const blob = new Blob([JSON.stringify(value, null, 2)], { type: "application/json" });
+  const href = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = href;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(href);
 }
 
 export default function Home() {
@@ -74,7 +84,8 @@ export default function Home() {
   const [repeatMode, setRepeatMode] = useState<RepeatMode>(DEFAULT_STATE.preferences.repeatMode);
   const [repeatTarget, setRepeatTarget] = useState<RepeatTarget>(DEFAULT_STATE.preferences.repeatTarget);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [activeSetId, setActiveSetId] = useState<string | null>(null);
+  const [activeCollection, setActiveCollection] = useState<ActiveCollection>(null);
+  const [libraryView, setLibraryView] = useState<LibraryView>("local");
   const [isListening, setIsListening] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [, setPlayerReady] = useState(false);
@@ -84,12 +95,14 @@ export default function Home() {
   const [saveOpen, setSaveOpen] = useState(false);
   const [editSet, setEditSet] = useState<SavedSet | null>(null);
   const [deleteSet, setDeleteSet] = useState<SavedSet | null>(null);
+  const [publishSet, setPublishSet] = useState<SavedSet | null>(null);
+  const [publishSlug, setPublishSlug] = useState("");
+  const [publishDescription, setPublishDescription] = useState("");
   const [url, setUrl] = useState("");
   const [recordingName, setRecordingName] = useState("");
   const [setName, setSetName] = useState("");
   const [formError, setFormError] = useState("");
   const [notice, setNotice] = useState("");
-  const [menuSetId, setMenuSetId] = useState<string | null>(null);
 
   const playerHostRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YouTubePlayer | null>(null);
@@ -102,7 +115,14 @@ export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const current = queue[currentIndex] ?? null;
-  const activeSet = sets.find((set) => set.id === activeSetId) ?? null;
+  const activeLocalSet = activeCollection?.kind === "local"
+    ? sets.find((set) => set.id === activeCollection.id) ?? null
+    : null;
+  const activeCuratedSet = activeCollection?.kind === "curated"
+    ? curatedSets.find((set) => set.id === activeCollection.id) ?? null
+    : null;
+  const activeCollectionName = activeLocalSet?.name ?? activeCuratedSet?.name ?? null;
+  const publishId = slugifyCuratedId(publishSlug);
 
   useEffect(() => {
     try {
@@ -217,7 +237,7 @@ export default function Home() {
   useEffect(() => () => playerRef.current?.destroy(), []);
   useEffect(() => {
     if (!notice) return;
-    const timer = window.setTimeout(() => setNotice(""), 3600);
+    const timer = window.setTimeout(() => setNotice(""), 4200);
     return () => window.clearTimeout(timer);
   }, [notice]);
 
@@ -246,9 +266,7 @@ export default function Home() {
   function selectRecording(index: number, shouldPlay = false) {
     resumeRef.current = { time: 0, playing: shouldPlay };
     resetPlaybackCounters(); setCurrentIndex(index); setPlayerError("");
-    if (shouldPlay) {
-      setIsListening(true);
-    }
+    if (shouldPlay) setIsListening(true);
   }
 
   function moveRecording(index: number, direction: -1 | 1) {
@@ -257,13 +275,14 @@ export default function Home() {
     const next = [...queue];
     [next[index], next[destination]] = [next[destination], next[index]];
     setQueue(next);
+    if (activeCollection?.kind === "curated") setActiveCollection(null);
     if (currentIndex === index) setCurrentIndex(destination);
     else if (currentIndex === destination) setCurrentIndex(index);
   }
 
   function removeRecording(index: number) {
     const next = queue.filter((_, itemIndex) => itemIndex !== index);
-    setQueue(next); setActiveSetId(null); resetPlaybackCounters();
+    setQueue(next); setActiveCollection(null); resetPlaybackCounters();
     if (!next.length) {
       playerRef.current?.destroy(); playerRef.current = null; setPlayerReady(false);
       setCurrentIndex(0); setIsPlaying(false); setIsListening(false);
@@ -289,17 +308,24 @@ export default function Home() {
       id: makeId("recording"), videoId, url: `https://www.youtube.com/watch?v=${videoId}`,
       title: title || `Gravação ${queue.length + 1}`,
     };
-    setQueue((items) => [...items, recording]); setActiveSetId(null);
+    setQueue((items) => [...items, recording]); setActiveCollection(null);
     if (!queue.length) setCurrentIndex(0);
     setUrl(""); setRecordingName(""); setFormError(""); setAddOpen(false);
     setNotice("Gravação adicionada à fila.");
   }
 
-  function loadSet(set: SavedSet) {
+  function loadLocalSet(set: SavedSet) {
     resumeRef.current = { time: 0, playing: false };
     setQueue(set.recordings); setRepeatMode(set.repeatMode); setRepeatTarget(set.repeatTarget);
-    setActiveSetId(set.id); setCurrentIndex(0); setIsListening(false);
-    resetPlaybackCounters(); setMenuSetId(null);
+    setActiveCollection({ kind: "local", id: set.id }); setCurrentIndex(0); setIsListening(false);
+    setLibraryView("local"); resetPlaybackCounters(); setPlayerError("");
+  }
+
+  function loadCuratedSet(set: CuratedSet) {
+    resumeRef.current = { time: 0, playing: false };
+    setQueue(recordingsFromCurated(set)); setRepeatMode(set.repeatMode); setRepeatTarget(set.repeatTarget);
+    setActiveCollection({ kind: "curated", id: set.id }); setCurrentIndex(0); setIsListening(false);
+    setLibraryView("curated"); resetPlaybackCounters(); setPlayerError("");
   }
 
   function createSet(event: FormEvent) {
@@ -309,13 +335,24 @@ export default function Home() {
       id: makeId("set"), name, recordings: queue, repeatMode, repeatTarget,
       updatedAt: new Date().toISOString(),
     };
-    setSets((items) => [newSet, ...items]); setActiveSetId(newSet.id);
+    setSets((items) => [newSet, ...items]);
+    setActiveCollection({ kind: "local", id: newSet.id }); setLibraryView("local");
     setSetName(""); setSaveOpen(false); setNotice("Conjunto salvo neste navegador.");
   }
 
+  function saveCuratedLocally(set: CuratedSet) {
+    const newSet: SavedSet = {
+      id: makeId("set"), name: set.name, recordings: recordingsFromCurated(set),
+      repeatMode: set.repeatMode, repeatTarget: set.repeatTarget, updatedAt: new Date().toISOString(),
+    };
+    setSets((items) => [newSet, ...items]);
+    setActiveCollection({ kind: "local", id: newSet.id }); setLibraryView("local");
+    setNotice("Conjunto copiado para Meus conjuntos.");
+  }
+
   function updateActiveSet() {
-    if (!activeSetId) return;
-    setSets((items) => items.map((set) => set.id === activeSetId ? {
+    if (!activeLocalSet) return;
+    setSets((items) => items.map((set) => set.id === activeLocalSet.id ? {
       ...set, recordings: queue, repeatMode, repeatTarget, updatedAt: new Date().toISOString(),
     } : set));
     setNotice("Conjunto atualizado.");
@@ -332,16 +369,38 @@ export default function Home() {
   function confirmDeleteSet() {
     if (!deleteSet) return;
     setSets((items) => items.filter((set) => set.id !== deleteSet.id));
-    if (activeSetId === deleteSet.id) setActiveSetId(null);
+    if (activeCollection?.kind === "local" && activeCollection.id === deleteSet.id) setActiveCollection(null);
     setDeleteSet(null); setNotice("Conjunto excluído.");
+  }
+
+  function preparePublication(set: SavedSet) {
+    setPublishSet(set);
+    setPublishSlug(slugifyCuratedId(set.name));
+    setPublishDescription("");
+  }
+
+  function publishDraft(openGitHub: boolean) {
+    if (!publishSet) return;
+    const draft = createCuratedDraft({
+      id: publishId,
+      name: publishSet.name,
+      description: publishDescription,
+      repeatMode: publishSet.repeatMode,
+      repeatTarget: publishSet.repeatTarget,
+      recordings: publishSet.recordings.map(({ videoId, title }) => ({ videoId, title })),
+    });
+    if (openGitHub) window.open(REPOSITORY_UPLOAD_URL, "_blank", "noopener,noreferrer");
+    downloadJson(draft, `${draft.id}.json`);
+    setPublishSlug(draft.id);
+    setNotice(openGitHub
+      ? "JSON baixado. Envie-o na página do GitHub que foi aberta."
+      : "Arquivo de publicação baixado.");
   }
 
   function exportLibrary() {
     const state: StoredState = { version: 1, queue, sets, preferences: { repeatMode, repeatTarget } };
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
-    const href = URL.createObjectURL(blob); const link = document.createElement("a");
-    link.href = href; link.download = `analogion-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    link.click(); URL.revokeObjectURL(href); setNotice("Backup exportado.");
+    downloadJson(state, `analogion-backup-${new Date().toISOString().slice(0, 10)}.json`);
+    setNotice("Backup exportado.");
   }
 
   async function importLibrary(event: ChangeEvent<HTMLInputElement>) {
@@ -351,7 +410,7 @@ export default function Home() {
       if (!isStoredState(parsed)) throw new Error("invalid");
       setQueue(parsed.queue); setSets(parsed.sets);
       setRepeatMode(parsed.preferences.repeatMode); setRepeatTarget(parsed.preferences.repeatTarget);
-      setCurrentIndex(0); setActiveSetId(null); resetPlaybackCounters(); setNotice("Biblioteca importada.");
+      setCurrentIndex(0); setActiveCollection(null); resetPlaybackCounters(); setNotice("Biblioteca importada.");
     } catch { setNotice("O arquivo não parece ser um backup válido do Analogion.") }
   }
 
@@ -375,7 +434,7 @@ export default function Home() {
             {playerError && <div className="player-message">{playerError}</div>}
           </div>
           <div className="listening-meta">
-            <p>{activeSet?.name ?? "Fila atual"}</p>
+            <p>{activeCollectionName ?? "Fila atual"}</p>
             <h1>{current.title}</h1>
           </div>
           <div className="seek-row">
@@ -414,45 +473,27 @@ export default function Home() {
       </header>
 
       <div className="preparation-grid">
-        <aside className="library-panel">
-          <div className="section-heading">
-            <div><p className="eyebrow">Biblioteca</p><h1>Meus conjuntos</h1></div>
-            <span className="library-count">{sets.length}</span>
-          </div>
-          <div className="set-list">
-            {!sets.length && <div className="empty-library"><BookOpen aria-hidden="true" /><p>Os conjuntos que você salvar aparecerão aqui.</p></div>}
-            {sets.map((set) => (
-              <article className={`set-row ${set.id === activeSetId ? "active" : ""}`} key={set.id}>
-                <button className="set-main" onClick={() => loadSet(set)}>
-                  <span className="set-name">{set.name}</span>
-                  <span className="set-meta">
-                    {set.recordings.length} {set.recordings.length === 1 ? "gravação" : "gravações"} ·{" "}
-                    {set.repeatTarget === "current" ? "gravação" : "fila"} ·{" "}
-                    {set.repeatMode === "infinite" ? "∞" : set.repeatMode === "three" ? "3×" : "1×"}
-                  </span>
-                </button>
-                <button className="set-play" aria-label={`Carregar ${set.name}`} onClick={() => loadSet(set)}><Play /></button>
-                <div className="set-menu-wrap">
-                  <button className="set-more" aria-label={`Opções de ${set.name}`}
-                    aria-expanded={menuSetId === set.id}
-                    onClick={() => setMenuSetId(menuSetId === set.id ? null : set.id)}><MoreHorizontal /></button>
-                  {menuSetId === set.id && <div className="set-menu">
-                    <button onClick={() => { setEditSet(set); setSetName(set.name); setMenuSetId(null) }}><Pencil /> Renomear</button>
-                    <button className="danger" onClick={() => { setDeleteSet(set); setMenuSetId(null) }}><Trash2 /> Excluir</button>
-                  </div>}
-                </div>
-              </article>
-            ))}
-          </div>
-          <button className="text-action" onClick={() => { setSetName(""); setSaveOpen(true) }} disabled={!queue.length}>
-            <Plus aria-hidden="true" /> Salvar fila como conjunto
-          </button>
-          <p className="storage-note">{recordingCount} {recordingCount === 1 ? "gravação guardada" : "gravações guardadas"} neste navegador</p>
-        </aside>
+        <LibraryPanel
+          view={libraryView}
+          onViewChange={setLibraryView}
+          sets={sets}
+          curatedSets={curatedSets}
+          activeKind={activeCollection?.kind ?? null}
+          activeId={activeCollection?.id ?? null}
+          recordingCount={recordingCount}
+          queueHasItems={queue.length > 0}
+          onLoadLocal={loadLocalSet}
+          onLoadCurated={loadCuratedSet}
+          onEditLocal={(set) => { setEditSet(set); setSetName(set.name) }}
+          onDeleteLocal={setDeleteSet}
+          onPreparePublish={preparePublication}
+          onSaveQueue={() => { setSetName(""); setSaveOpen(true) }}
+          onSaveCuratedLocally={saveCuratedLocally}
+        />
 
         <section className="player-workspace">
           <div className="workspace-heading">
-            <div><p className="eyebrow">{activeSet?.name ?? "Fila atual"}</p><h2>{current?.title ?? "Escolha o que deseja ouvir"}</h2></div>
+            <div><p className="eyebrow">{activeCollectionName ?? "Fila atual"}</p><h2>{current?.title ?? "Escolha o que deseja ouvir"}</h2></div>
             {current && <button className="listen-mode-button" onClick={() => switchListening(true)}><Headphones aria-hidden="true" /> Modo escuta</button>}
           </div>
           <div className={`video-frame ${!current ? "empty" : ""}`}>
@@ -499,7 +540,7 @@ export default function Home() {
                   </SelectContent>
                 </Select>
               </div>
-              {activeSet && <button className="update-button" onClick={updateActiveSet}><Save aria-hidden="true" /> Atualizar conjunto</button>}
+              {activeLocalSet && <button className="update-button" onClick={updateActiveSet}><Save aria-hidden="true" /> Atualizar conjunto</button>}
             </div>
             <div className="queue-list">
               {!queue.length && <p className="empty-queue">A fila está vazia.</p>}
@@ -555,6 +596,33 @@ export default function Home() {
             <DialogFooter><button type="button" className="secondary-action" onClick={() => setEditSet(null)}>Cancelar</button>
               <button type="submit" className="primary-action" disabled={!setName.trim()}>Renomear</button></DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!publishSet} onOpenChange={(open) => { if (!open) setPublishSet(null) }}>
+        <DialogContent className="analogion-dialog">
+          <DialogHeader><DialogTitle>Preparar publicação</DialogTitle>
+            <DialogDescription>
+              Gere um único JSON pronto para `catalog/sets`. Depois do merge e do deploy, esse conjunto ficará disponível em qualquer dispositivo.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="dialog-form">
+            <label>Identificador do arquivo
+              <input value={publishSlug} onChange={(event) => setPublishSlug(event.target.value)} placeholder="valaam-psalter" autoFocus />
+            </label>
+            <label>Descrição <span>opcional</span>
+              <textarea value={publishDescription} onChange={(event) => setPublishDescription(event.target.value)}
+                placeholder="Uma breve descrição para a biblioteca curada." rows={3} />
+            </label>
+            <div className="publish-path"><span>Destino</span><code>catalog/sets/{publishId}.json</code></div>
+            <p className="publish-note">
+              O Analogion não recebe acesso à sua conta do GitHub. O botão abaixo baixa o arquivo e abre diretamente a pasta de upload do repositório; basta enviar o JSON e propor a alteração por PR.
+            </p>
+            <DialogFooter className="publish-footer">
+              <button type="button" className="secondary-action" onClick={() => publishDraft(false)}>Baixar JSON</button>
+              <button type="button" className="primary-action" onClick={() => publishDraft(true)}>Baixar JSON e abrir GitHub</button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
