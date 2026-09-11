@@ -141,7 +141,11 @@ body.recollection-active {
   align-items: center;
   opacity: 1;
   transform: translateY(0);
-  transition: opacity .28s ease, transform .28s ease;
+  filter: blur(0);
+  transition:
+    opacity .56s cubic-bezier(.22, .61, .36, 1) .12s,
+    transform .56s cubic-bezier(.22, .61, .36, 1) .12s,
+    filter .56s cubic-bezier(.22, .61, .36, 1) .12s;
 }
 
 .preparation-shell.recollection-shell .listening-meta {
@@ -188,9 +192,9 @@ body.recollection-active {
   pointer-events: none;
   opacity: 0;
   background:
-    radial-gradient(ellipse 24% 7% at 50% 76%, rgba(145, 89, 37, .08) 0%, rgba(112, 68, 30, .035) 42%, transparent 76%),
-    radial-gradient(ellipse 46% 16% at 50% 78%, rgba(76, 47, 25, .028) 0%, transparent 72%);
-  transition: opacity .8s ease;
+    radial-gradient(ellipse 24% 7% at 50% 76%, rgba(145, 89, 37, .096) 0%, rgba(112, 68, 30, .042) 42%, transparent 76%),
+    radial-gradient(ellipse 46% 16% at 50% 78%, rgba(76, 47, 25, .034) 0%, transparent 72%);
+  transition: opacity .46s cubic-bezier(.22, .61, .36, 1);
 }
 
 .recollection-idle-ornament {
@@ -206,21 +210,23 @@ body.recollection-active {
   pointer-events: none;
   opacity: 0;
   transform: translate(-50%, 5px);
-  transition: opacity .72s ease, transform .72s ease;
+  transition:
+    opacity .42s cubic-bezier(.22, .61, .36, 1),
+    transform .42s cubic-bezier(.22, .61, .36, 1);
 }
 
 .recollection-idle-line {
   flex: 1 1 auto;
   height: 1px;
-  opacity: .55;
+  opacity: .56;
 }
 
 .recollection-idle-line:first-child {
-  background: linear-gradient(90deg, transparent 0%, rgba(151, 104, 58, .42) 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(151, 104, 58, .44) 100%);
 }
 
 .recollection-idle-line:last-child {
-  background: linear-gradient(90deg, rgba(151, 104, 58, .42) 0%, transparent 100%);
+  background: linear-gradient(90deg, rgba(151, 104, 58, .44) 0%, transparent 100%);
 }
 
 .recollection-idle-dots {
@@ -234,8 +240,8 @@ body.recollection-active {
   width: 3px;
   height: 3px;
   border-radius: 999px;
-  background: rgba(171, 117, 63, .78);
-  box-shadow: 0 0 7px rgba(151, 91, 40, .12);
+  background: rgba(171, 117, 63, .82);
+  box-shadow: 0 0 7px rgba(151, 91, 40, .13);
 }
 
 .recollection-chrome {
@@ -249,7 +255,12 @@ body.recollection-active {
   justify-content: space-between;
   pointer-events: none;
   opacity: 1;
-  transition: opacity .28s ease;
+  transform: translateY(0);
+  filter: blur(0);
+  transition:
+    opacity .56s cubic-bezier(.22, .61, .36, 1) .16s,
+    transform .56s cubic-bezier(.22, .61, .36, 1) .16s,
+    filter .56s cubic-bezier(.22, .61, .36, 1) .16s;
 }
 
 .recollection-mark {
@@ -311,22 +322,35 @@ body.recollection-active {
 
 .preparation-shell.recollection-shell.recollection-controls-hidden .listening-panel {
   opacity: 0;
-  transform: translateY(5px);
+  transform: translateY(6px);
+  filter: blur(1px);
   pointer-events: none;
+  transition:
+    opacity .34s cubic-bezier(.22, .61, .36, 1),
+    transform .34s cubic-bezier(.22, .61, .36, 1),
+    filter .34s cubic-bezier(.22, .61, .36, 1);
 }
 
 .preparation-shell.recollection-shell.recollection-controls-hidden .recollection-chrome {
   opacity: 0;
+  transform: translateY(-4px);
+  filter: blur(1px);
   pointer-events: none;
+  transition:
+    opacity .32s cubic-bezier(.22, .61, .36, 1),
+    transform .32s cubic-bezier(.22, .61, .36, 1),
+    filter .32s cubic-bezier(.22, .61, .36, 1);
 }
 
 .preparation-shell.recollection-shell.recollection-controls-hidden .recollection-idle-atmosphere {
   opacity: 1;
+  transition: opacity .8s ease;
 }
 
 .preparation-shell.recollection-shell.recollection-controls-hidden .recollection-idle-ornament {
-  opacity: .72;
+  opacity: .76;
   transform: translate(-50%, 0);
+  transition: opacity .72s ease, transform .72s ease;
 }
 
 .recollection-wake-layer {
@@ -387,8 +411,8 @@ body.recollection-active {
 
   .recollection-idle-atmosphere {
     background:
-      radial-gradient(ellipse 42% 6% at 50% 80%, rgba(145, 89, 37, .07) 0%, rgba(112, 68, 30, .03) 44%, transparent 78%),
-      radial-gradient(ellipse 70% 15% at 50% 81%, rgba(76, 47, 25, .024) 0%, transparent 72%);
+      radial-gradient(ellipse 42% 6% at 50% 80%, rgba(145, 89, 37, .084) 0%, rgba(112, 68, 30, .036) 44%, transparent 78%),
+      radial-gradient(ellipse 70% 15% at 50% 81%, rgba(76, 47, 25, .029) 0%, transparent 72%);
   }
 
   .recollection-idle-ornament {
