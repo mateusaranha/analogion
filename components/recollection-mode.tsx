@@ -4,8 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { Maximize2, Minimize2 } from "lucide-react"
 
-import "./recollection-mode.css"
-
 const IDLE_HIDE_MS = 3000
 
 export function RecollectionMode() {
