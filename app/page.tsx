@@ -100,6 +100,7 @@ export default function Home() {
   const [publishSet, setPublishSet] = useState<SavedSet | null>(null);
   const [publishSlug, setPublishSlug] = useState("");
   const [publishDescription, setPublishDescription] = useState("");
+  const [duplicateVideoId, setDuplicateVideoId] = useState<string | null>(null);
   const [url, setUrl] = useState("");
   const [recordingName, setRecordingName] = useState("");
   const [setName, setSetName] = useState("");
@@ -321,6 +322,11 @@ export default function Home() {
     event.preventDefault();
     const videoId = extractYouTubeId(url);
     if (!videoId) { setFormError("Cole um link válido de vídeo do YouTube."); return }
+    if (queue.some((item) => item.videoId === videoId)) {
+      setFormError("");
+      setDuplicateVideoId(videoId);
+      return;
+    }
     let title = recordingName.trim();
     if (!title) {
       try {
@@ -338,6 +344,34 @@ export default function Home() {
     if (!queue.length) setCurrentIndex(0);
     setUrl(""); setRecordingName(""); setFormError(""); setAddOpen(false);
     setNotice("Gravação adicionada à fila.");
+  }
+
+  function moveDuplicateToEnd() {
+    if (!duplicateVideoId) return;
+
+    const duplicate = current?.videoId === duplicateVideoId
+      ? current
+      : queue.find((item) => item.videoId === duplicateVideoId);
+    if (!duplicate) {
+      setDuplicateVideoId(null);
+      return;
+    }
+
+    const currentId = current?.id ?? null;
+    const next = queue.filter((item) => item.videoId !== duplicateVideoId);
+    next.push(duplicate);
+    setQueue(next);
+    setActiveCollection(null);
+    resetPlaybackCounters();
+
+    if (currentId) {
+      const nextCurrentIndex = next.findIndex((item) => item.id === currentId);
+      if (nextCurrentIndex >= 0) setCurrentIndex(nextCurrentIndex);
+    }
+
+    setDuplicateVideoId(null);
+    setUrl(""); setRecordingName(""); setFormError(""); setAddOpen(false);
+    setNotice("Gravação movida para o final da fila.");
   }
 
   function loadLocalSet(set: SavedSet) {
@@ -601,6 +635,21 @@ export default function Home() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!duplicateVideoId} onOpenChange={(open) => { if (!open) setDuplicateVideoId(null) }}>
+        <AlertDialogContent className="analogion-dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Esta gravação já está na fila</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja remover a posição anterior e colocar a gravação no final da fila?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="secondary-action">Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="primary-action" onClick={moveDuplicateToEnd}>Mover para o final</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <EditRecordingDialog
         recording={editRecording}
