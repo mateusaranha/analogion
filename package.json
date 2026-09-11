@@ -31,5 +31,10 @@
     "vite": "8.0.13"
   },
   "type": "module",
-  "packageManager": "pnpm@11.25.0"
+  "packageManager": "pnpm@11.25.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
 }
