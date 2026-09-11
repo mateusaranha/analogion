@@ -44,6 +44,7 @@ body.recollection-active {
 }
 
 .preparation-shell.recollection-shell {
+  --recollection-idle-shift: clamp(72px, 13svh, 112px);
   position: fixed;
   inset: 0;
   z-index: 1000;
@@ -118,7 +119,11 @@ body.recollection-active {
   box-shadow:
     0 44px 110px rgba(0, 0, 0, .62),
     0 0 0 1px rgba(206, 166, 92, .035) inset;
-  transition: width .25s ease, opacity .25s ease;
+  transform: translateY(0);
+  transition:
+    width .25s ease,
+    opacity .25s ease,
+    transform .8s cubic-bezier(.22, .61, .36, 1);
 }
 
 .preparation-shell.recollection-shell .video-frame::after {
@@ -243,6 +248,10 @@ body.recollection-active {
   cursor: none;
 }
 
+.preparation-shell.recollection-shell.recollection-controls-hidden .video-frame {
+  transform: translateY(var(--recollection-idle-shift));
+}
+
 .preparation-shell.recollection-shell.recollection-controls-hidden .listening-panel {
   opacity: 0;
   transform: translateY(5px);
@@ -276,6 +285,10 @@ body.recollection-active {
 
   .recollection-entry span {
     display: none;
+  }
+
+  .preparation-shell.recollection-shell {
+    --recollection-idle-shift: clamp(46px, 8svh, 72px);
   }
 
   .preparation-shell.recollection-shell .player-workspace {
