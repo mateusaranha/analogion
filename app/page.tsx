@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { EditRecordingDialog } from "@/components/edit-recording-dialog";
 import { LibraryPanel, type LibraryView } from "@/components/library-panel";
+import { VolumeControl } from "@/components/volume-control";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -30,6 +31,7 @@ type YouTubePlayer = {
   playVideo: () => void; pauseVideo: () => void;
   seekTo: (seconds: number, allowSeekAhead: boolean) => void;
   getCurrentTime: () => number; getDuration: () => number;
+  setVolume: (volume: number) => void; mute: () => void; unMute: () => void;
   loadVideoById: (videoId: string) => void; destroy: () => void;
 };
 
@@ -49,6 +51,7 @@ declare global {
 }
 
 const STORAGE_KEY = "analogion-library-v1";
+const VOLUME_STORAGE_KEY = "analogion-volume-v1";
 const REPOSITORY_UPLOAD_URL = "https://github.com/mateusaranha/analogion/upload/main/catalog/sets";
 const DEFAULT_STATE: StoredState = {
   version: 1, queue: [], sets: [],
@@ -92,6 +95,9 @@ export default function Home() {
   const [, setPlayerReady] = useState(false);
   const [playerError, setPlayerError] = useState("");
   const [progress, setProgress] = useState({ current: 0, duration: 0 });
+  const [volume, setVolume] = useState(100);
+  const [muted, setMuted] = useState(false);
+  const [audioSettingsReady, setAudioSettingsReady] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [editSet, setEditSet] = useState<SavedSet | null>(null);
@@ -115,6 +121,8 @@ export default function Home() {
   const currentIndexRef = useRef(currentIndex);
   const repeatModeRef = useRef(repeatMode);
   const repeatTargetRef = useRef(repeatTarget);
+  const volumeRef = useRef(volume);
+  const mutedRef = useRef(muted);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const current = queue[currentIndex] ?? null;
@@ -146,15 +154,44 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    try {
+      const raw = localStorage.getItem(VOLUME_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { volume?: unknown; muted?: unknown };
+        if (typeof parsed.volume === "number" && Number.isFinite(parsed.volume)) {
+          const storedVolume = Math.min(100, Math.max(0, Math.round(parsed.volume)));
+          setVolume(storedVolume);
+          volumeRef.current = storedVolume;
+        }
+        if (typeof parsed.muted === "boolean") {
+          setMuted(parsed.muted);
+          mutedRef.current = parsed.muted;
+        }
+      }
+    } catch {
+      // Audio preferences are optional; fall back to full volume.
+    } finally {
+      setAudioSettingsReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
     if (!hydrated) return;
     const state: StoredState = { version: 1, queue, sets, preferences: { repeatMode, repeatTarget } };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [hydrated, queue, sets, repeatMode, repeatTarget]);
 
+  useEffect(() => {
+    if (!audioSettingsReady) return;
+    localStorage.setItem(VOLUME_STORAGE_KEY, JSON.stringify({ volume, muted }));
+  }, [audioSettingsReady, volume, muted]);
+
   useEffect(() => { queueRef.current = queue }, [queue]);
   useEffect(() => { currentIndexRef.current = currentIndex }, [currentIndex]);
   useEffect(() => { repeatModeRef.current = repeatMode }, [repeatMode]);
   useEffect(() => { repeatTargetRef.current = repeatTarget }, [repeatTarget]);
+  useEffect(() => { volumeRef.current = volume }, [volume]);
+  useEffect(() => { mutedRef.current = muted }, [muted]);
 
   const resetPlaybackCounters = useCallback(() => {
     countersRef.current = { itemPlays: 0, queueCycles: 0 };
@@ -194,6 +231,8 @@ export default function Home() {
         events: {
           onReady: () => {
             setPlayerReady(true);
+            playerRef.current?.setVolume(volumeRef.current);
+            if (mutedRef.current) playerRef.current?.mute(); else playerRef.current?.unMute();
             if (resumeRef.current.time > 0) {
               playerRef.current?.seekTo(resumeRef.current.time, true);
             }
@@ -255,6 +294,38 @@ export default function Home() {
 
   function switchListening(next: boolean) {
     setIsListening(next);
+  }
+
+  function changeVolume(nextVolume: number) {
+    const normalized = Math.min(100, Math.max(0, Math.round(nextVolume)));
+    setVolume(normalized);
+    volumeRef.current = normalized;
+    playerRef.current?.setVolume(normalized);
+
+    if (normalized > 0 && mutedRef.current) {
+      setMuted(false);
+      mutedRef.current = false;
+      playerRef.current?.unMute();
+    }
+  }
+
+  function toggleMute() {
+    if (mutedRef.current || volumeRef.current === 0) {
+      const restoredVolume = volumeRef.current === 0 ? 50 : volumeRef.current;
+      if (volumeRef.current === 0) {
+        setVolume(restoredVolume);
+        volumeRef.current = restoredVolume;
+        playerRef.current?.setVolume(restoredVolume);
+      }
+      setMuted(false);
+      mutedRef.current = false;
+      playerRef.current?.unMute();
+      return;
+    }
+
+    setMuted(true);
+    mutedRef.current = true;
+    playerRef.current?.mute();
   }
 
   function seekTo(seconds: number) {
@@ -537,17 +608,20 @@ export default function Home() {
             </button>
             <button className="icon-button" aria-label="Próxima gravação" disabled={currentIndex >= queue.length - 1}
               onClick={() => selectRecording(currentIndex + 1, true)}><ChevronRight /></button>
-            <div className="compact-progress">
-              <input
-                className="compact-seek"
-                aria-label="Posição da gravação"
-                type="range" min="0" max={progress.duration || 1}
-                value={Math.min(progress.current, progress.duration || 0)}
-                disabled={!progress.duration}
-                onChange={(event) => seekTo(Number(event.target.value))}
-                style={{ "--seek": `${progressPercent}%` } as React.CSSProperties}
-              />
-              <small>{formatTime(progress.current)} / {formatTime(progress.duration)}</small>
+            <div className="compact-progress-group">
+              <div className="compact-progress">
+                <input
+                  className="compact-seek"
+                  aria-label="Posição da gravação"
+                  type="range" min="0" max={progress.duration || 1}
+                  value={Math.min(progress.current, progress.duration || 0)}
+                  disabled={!progress.duration}
+                  onChange={(event) => seekTo(Number(event.target.value))}
+                  style={{ "--seek": `${progressPercent}%` } as React.CSSProperties}
+                />
+                <small>{formatTime(progress.current)} / {formatTime(progress.duration)}</small>
+              </div>
+              <VolumeControl volume={volume} muted={muted} onVolumeChange={changeVolume} onToggleMute={toggleMute} />
             </div>
           </div>}
 
@@ -572,6 +646,9 @@ export default function Home() {
               </button>
               <button className="icon-button" aria-label="Próxima gravação" disabled={currentIndex >= queue.length - 1}
                 onClick={() => selectRecording(currentIndex + 1, true)}><ChevronRight /></button>
+            </div>
+            <div className="listening-volume">
+              <VolumeControl variant="listening" volume={volume} muted={muted} onVolumeChange={changeVolume} onToggleMute={toggleMute} />
             </div>
             <div className="repeat-status"><Repeat aria-hidden="true" /> {targetLabel} · {repeatLabel}</div>
           </div>}
