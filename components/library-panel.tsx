@@ -12,7 +12,6 @@ type LibraryPanelProps = {
   curatedSets: CuratedSet[];
   activeKind: "local" | "curated" | null;
   activeId: string | null;
-  recordingCount: number;
   queueHasItems: boolean;
   onLoadLocal: (set: SavedSet) => void;
   onLoadCurated: (set: CuratedSet) => void;
@@ -37,7 +36,7 @@ function repeatMeta(set: RepeatSummary) {
 }
 
 export function LibraryPanel({
-  view, onViewChange, sets, curatedSets, activeKind, activeId, recordingCount, queueHasItems,
+  view, onViewChange, sets, curatedSets, activeKind, activeId, queueHasItems,
   onLoadLocal, onLoadCurated, onEditLocal, onDeleteLocal, onPreparePublish, onSaveQueue,
   onSaveCuratedLocally,
 }: LibraryPanelProps) {
@@ -50,7 +49,7 @@ export function LibraryPanel({
   return (
     <aside className="library-panel">
       <div className="section-heading">
-        <div><p className="eyebrow">Biblioteca</p><h1>{view === "local" ? "Meus conjuntos" : "Biblioteca curada"}</h1></div>
+        <h1>Biblioteca</h1>
         <span className="library-count">{itemCount}</span>
       </div>
 
@@ -87,7 +86,6 @@ export function LibraryPanel({
         <button className="text-action" onClick={onSaveQueue} disabled={!queueHasItems}>
           <Plus aria-hidden="true" /> Salvar fila como conjunto
         </button>
-        <p className="storage-note">{recordingCount} {recordingCount === 1 ? "gravação guardada" : "gravações guardadas"} neste navegador</p>
       </> : <>
         <div className="set-list">
           {!curatedSets.length && <div className="empty-library"><BookOpen aria-hidden="true" />
@@ -108,7 +106,6 @@ export function LibraryPanel({
         {currentCurated && <button className="text-action" onClick={() => onSaveCuratedLocally(currentCurated)}>
           <Plus aria-hidden="true" /> Salvar em Meus conjuntos
         </button>}
-        <p className="storage-note">Publicada com o site · disponível em qualquer dispositivo</p>
       </>}
     </aside>
   );
