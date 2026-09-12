@@ -2,9 +2,9 @@
 
 import {
   ArrowDown, ArrowUp, BookOpen, ChevronLeft, ChevronRight, Download, Headphones,
-  Pause, Pencil, Play, Plus, Repeat, Save, Upload, X,
+  MoreHorizontal, Pause, Pencil, Play, Plus, Repeat, Save, Upload, X,
 } from "lucide-react";
-import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -26,6 +26,7 @@ import {
   createCuratedDraft, curatedSets, slugifyCuratedId, type CuratedSet,
 } from "@/lib/curated-library";
 import { isStoredState, type Recording, type SavedSet, type StoredState } from "@/lib/library";
+import "./minimal-interface.css";
 
 type YouTubePlayer = {
   playVideo: () => void; pauseVideo: () => void;
@@ -282,10 +283,6 @@ export default function Home() {
     const timer = window.setTimeout(() => setNotice(""), 4200);
     return () => window.clearTimeout(timer);
   }, [notice]);
-
-  const recordingCount = useMemo(
-    () => new Set(sets.flatMap((set) => set.recordings.map((item) => item.videoId))).size, [sets],
-  );
 
   function togglePlayback() {
     if (!current || !playerRef.current) return;
@@ -557,12 +554,24 @@ export default function Home() {
       </header>
 
       <header className="topbar">
-        <div><div className="wordmark">ANALOGION</div><p className="wordmark-note">mesa de escuta</p></div>
-        <div className="backup-actions">
-          <button className="quiet-button" onClick={exportLibrary}><Download aria-hidden="true" /><span>Exportar</span></button>
-          <button className="quiet-button" onClick={() => fileInputRef.current?.click()}><Upload aria-hidden="true" /><span>Importar</span></button>
-          <input ref={fileInputRef} className="sr-only" type="file" accept="application/json,.json" onChange={importLibrary} />
+        <div>
+          <div className="wordmark">ANALOGION</div>
+          <div className="wordmark-ornament" aria-hidden="true" />
         </div>
+        <details className="backup-menu">
+          <summary aria-label="Opções de backup"><MoreHorizontal aria-hidden="true" /></summary>
+          <div className="backup-menu-popover">
+            <button type="button" onClick={(event) => {
+              exportLibrary();
+              event.currentTarget.closest("details")?.removeAttribute("open");
+            }}><Download aria-hidden="true" /> Exportar backup</button>
+            <button type="button" onClick={(event) => {
+              fileInputRef.current?.click();
+              event.currentTarget.closest("details")?.removeAttribute("open");
+            }}><Upload aria-hidden="true" /> Importar backup</button>
+            <input ref={fileInputRef} className="sr-only" type="file" accept="application/json,.json" onChange={importLibrary} />
+          </div>
+        </details>
       </header>
 
       <div className="preparation-grid">
@@ -573,7 +582,6 @@ export default function Home() {
           curatedSets={curatedSets}
           activeKind={activeCollection?.kind ?? null}
           activeId={activeCollection?.id ?? null}
-          recordingCount={recordingCount}
           queueHasItems={queue.length > 0}
           onLoadLocal={loadLocalSet}
           onLoadCurated={loadCuratedSet}
@@ -586,7 +594,7 @@ export default function Home() {
 
         <section className="player-workspace">
           <div className="workspace-heading">
-            <div><p className="eyebrow">{activeCollectionName ?? "Fila atual"}</p><h2>{current?.title ?? "Escolha o que deseja ouvir"}</h2></div>
+            <div>{activeCollectionName && <p className="eyebrow">{activeCollectionName}</p>}<h2>{current?.title ?? "Escolha o que deseja ouvir"}</h2></div>
             {current && <button className="listen-mode-button" onClick={() => switchListening(true)}><Headphones aria-hidden="true" /> Modo escuta</button>}
           </div>
           <div className={`video-frame ${isListening ? "listening-video" : ""} ${!current ? "empty" : ""}`}>
@@ -627,7 +635,7 @@ export default function Home() {
 
           {current && <div className="listening-panel">
             <div className="listening-meta">
-              <p>{activeCollectionName ?? "Fila atual"}</p>
+              {activeCollectionName && <p>{activeCollectionName}</p>}
               <h1>{current.title}</h1>
             </div>
             <div className="seek-row">
@@ -655,7 +663,7 @@ export default function Home() {
 
           <div className="queue-section">
             <div className="queue-toolbar">
-              <div><p className="eyebrow">Sequência</p><h3>Fila <span>{queue.length}</span></h3></div>
+              <h3>Fila <span>{queue.length}</span></h3>
               <button className="text-action inline" onClick={() => setAddOpen(true)}><Plus aria-hidden="true" /> Adicionar gravação</button>
             </div>
             <div className="repeat-controls" aria-label="Configuração de repetição">

@@ -1,0 +1,131 @@
+.wordmark-ornament {
+  position: relative;
+  width: 86px;
+  height: 8px;
+  margin-top: 7px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(171, 117, 63, .72) 0 1.25px, transparent 1.6px),
+    radial-gradient(circle at calc(50% - 8px) 50%, rgba(171, 117, 63, .6) 0 1.15px, transparent 1.5px),
+    radial-gradient(circle at calc(50% + 8px) 50%, rgba(171, 117, 63, .6) 0 1.15px, transparent 1.5px);
+}
+
+.wordmark-ornament::before,
+.wordmark-ornament::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 26px;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.wordmark-ornament::before {
+  left: 0;
+  background: linear-gradient(90deg, transparent, rgba(151, 104, 58, .34));
+}
+
+.wordmark-ornament::after {
+  right: 0;
+  background: linear-gradient(90deg, rgba(151, 104, 58, .34), transparent);
+}
+
+.backup-menu {
+  position: relative;
+}
+
+.backup-menu > summary {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #8f8575;
+  cursor: pointer;
+  list-style: none;
+  transition: color .16s ease, background .16s ease;
+}
+
+.backup-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.backup-menu > summary:hover,
+.backup-menu[open] > summary {
+  color: #e4d7c0;
+  background: rgba(255, 255, 255, .035);
+}
+
+.backup-menu > summary:focus-visible {
+  outline: 2px solid #d1ad67;
+  outline-offset: 3px;
+}
+
+.backup-menu > summary svg {
+  width: 17px;
+  height: 17px;
+}
+
+.backup-menu-popover {
+  position: absolute;
+  right: 0;
+  top: 43px;
+  z-index: 40;
+  width: 176px;
+  padding: 5px;
+  border: 1px solid #4b3e2e;
+  border-radius: 7px;
+  background: #201b15;
+  box-shadow: 0 16px 35px rgba(0, 0, 0, .42);
+}
+
+.backup-menu-popover button {
+  width: 100%;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: #c9bdab;
+  cursor: pointer;
+  text-align: left;
+  font-size: .82rem;
+}
+
+.backup-menu-popover button:hover {
+  background: #2c2419;
+  color: #eadfc9;
+}
+
+.backup-menu-popover svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+
+.library-panel .section-heading {
+  align-items: center;
+}
+
+.library-panel .section-heading h1 {
+  color: #e9dfcf;
+}
+
+@media (max-width: 600px) {
+  .wordmark-ornament {
+    width: 74px;
+    margin-top: 6px;
+  }
+
+  .wordmark-ornament::before,
+  .wordmark-ornament::after {
+    width: 21px;
+  }
+
+  .backup-menu > summary {
+    width: 38px;
+    height: 38px;
+  }
+}
