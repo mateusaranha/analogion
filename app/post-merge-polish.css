@@ -7,7 +7,7 @@
 }
 
 .queue-select {
-  grid-template-columns: 48px minmax(0, 1fr);
+  padding-left: 10px;
 }
 
 .recollection-idle-ornament {
@@ -16,7 +16,7 @@
 
 @media (max-width: 700px) {
   .queue-select {
-    grid-template-columns: 38px minmax(0, 1fr);
+    padding-left: 8px;
   }
 
   .recollection-idle-ornament {
