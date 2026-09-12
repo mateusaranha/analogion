@@ -86,6 +86,21 @@ pnpm preview
 
 Para mudanças futuras, consulte também `AGENTS.md`, que registra princípios de arquitetura e regras de manutenção do projeto.
 
+## Manutenção e forks
+
+O Analogion é mantido principalmente como um projeto pessoal, não como um projeto comunitário com processo formal de contribuição. O repositório é público e usa licença MIT para que o código possa ser estudado, reutilizado ou bifurcado sem depender de uma estrutura de governança em torno do projeto original.
+
+Para usar um fork como projeto próprio, a base é intencionalmente simples:
+
+1. faça o fork ou clone do repositório;
+2. execute `pnpm install` e `pnpm build`;
+3. habilite GitHub Pages com GitHub Actions no repositório do fork;
+4. use o workflow de deploy já incluído para publicar o build estático.
+
+O funcionamento principal não exige backend, banco de dados, login ou secrets de aplicação. A biblioteca curada continua sendo formada pelos arquivos versionados em `catalog/sets/`.
+
+`AGENTS.md` existe como documentação operacional para manutenção futura e para agentes de código. Os templates de issue e PR são apenas auxiliares leves de organização; não representam um processo obrigatório de contribuição externa.
+
 ## Deploy
 
 O workflow `.github/workflows/deploy-pages.yml` publica automaticamente o conteúdo de `dist/` no GitHub Pages após cada push ou merge na branch `main`.
